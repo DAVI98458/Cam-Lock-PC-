@@ -1,0 +1,103 @@
+--// Mensagem de créditos
+local ScreenGui = Instance.new("ScreenGui")
+local Credit = Instance.new("TextLabel")
+
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Name = "CamLockGUI"
+
+Credit.Parent = ScreenGui
+Credit.Size = UDim2.new(0.5, 0, 0.1, 0)
+Credit.Position = UDim2.new(0.25, 0, 0, 0)
+Credit.BackgroundTransparency = 0.5
+Credit.BackgroundColor3 = Color3.new(0, 0, 0)
+Credit.TextColor3 = Color3.new(1, 1, 1)
+Credit.Font = Enum.Font.SourceSansBold
+Credit.TextScaled = true
+Credit.Text = "Diretor: @coroadinho_37203 | Programador: @coroadinho_37203 and @Shadownchavoso"
+
+game:GetService("Debris"):AddItem(Credit, 10)
+
+--// Mensagem "Press R"
+local PressR = Instance.new("TextLabel")
+PressR.Parent = ScreenGui
+PressR.Size = UDim2.new(0.2, 0, 0.05, 0)
+PressR.Position = UDim2.new(0.4, 0, 0.45, 0)
+PressR.BackgroundTransparency = 0.5
+PressR.BackgroundColor3 = Color3.new(0, 0, 0)
+PressR.TextColor3 = Color3.new(1, 1, 1)
+PressR.Font = Enum.Font.SourceSansBold
+PressR.TextScaled = true
+PressR.Text = "Press R"
+
+PressR.Visible = false
+task.delay(10, function()
+    PressR.Visible = true
+    task.delay(3, function()
+        PressR.Visible = false
+    end)
+end)
+
+--// Variáveis
+local cam = workspace.CurrentCamera
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local camLock = false
+local target = nil
+
+--// Função para detectar o jogador no centro da tela
+local function getPlayerInCrosshair()
+    local closest = nil
+    local smallestAngle = math.huge
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            local headPos = player.Character.Head.Position
+            local viewportPoint, onScreen = cam:WorldToViewportPoint(headPos)
+            if onScreen then
+                local screenCenter = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+                local dist = (Vector2.new(viewportPoint.X, viewportPoint.Y) - screenCenter).magnitude
+                if dist < smallestAngle then
+                    smallestAngle = dist
+                    closest = player
+                end
+            end
+        end
+    end
+
+    if smallestAngle < 100 then
+        return closest
+    else
+        return nil
+    end
+end
+
+--// Detectar tecla R
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.R then
+        if not camLock then
+            local playerInSight = getPlayerInCrosshair()
+            if playerInSight then
+                target = playerInSight
+                camLock = true
+                print("Cam Lock ativado em: " .. playerInSight.Name)
+            else
+                print("Nenhum alvo na mira!")
+            end
+        else
+            camLock = false
+            target = nil
+            print("Cam Lock desativado")
+        end
+    end
+end)
+
+--// Loop para travar a câmera no alvo
+RunService.RenderStepped:Connect(function()
+    if camLock and target and target.Character and target.Character:FindFirstChild("Head") then
+        cam.CFrame = CFrame.new(cam.CFrame.Position, target.Character.Head.Position)
+    end
+end)
